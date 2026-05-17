@@ -433,6 +433,23 @@ export default function App() {
     touchX.current = null;
   };
 
+  // ── keyboard shortcuts for desktop ──
+  useEffect(() => {
+    if (screen !== "game") return;
+    const handleKeyDown = (e) => {
+      if (busy) return;
+      if (e.key === " " || e.key === "Enter" || e.key === "ArrowLeft") {
+        e.preventDefault();
+        advance("correct");
+      } else if (e.key === "Escape" || e.key === "ArrowRight") {
+        e.preventDefault();
+        advance("skip");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [screen, busy, idx, roundWords]);
+
   // ── computed ──
   const meta     = CATEGORY_META[category] || CATEGORY_META["全部"];
   const difMeta  = DIFFICULTY_META[difficulty];
@@ -446,41 +463,67 @@ export default function App() {
   const remaining  = totalWords - usedCount;
 
   return (
-    <div style={S.root}>
+    <div style={S.root} className="app-container">
       <style>{CSS}</style>
+
+      {/* ══ GLOBAL HEADER (visible on all screens except active game) ══ */}
+      {screen !== "game" && (
+        <header className="global-header">
+          <div className="header-content">
+            <div className="header-brand" onClick={() => setScreen("home")} style={{ cursor: "pointer" }}>
+              <img src="/logo.png" className="header-logo" alt="logo" />
+              <div className="header-titles">
+                <span className="header-title">你说我猜</span>
+                <span className="header-tagline">PARTY CARD GAME</span>
+              </div>
+            </div>
+            <div className="header-actions">
+              <button className="header-nav-btn" onClick={() => setScreen("home")}>首页</button>
+              <button className="header-nav-btn" onClick={() => setScreen("category")}>分类</button>
+            </div>
+          </div>
+        </header>
+      )}
 
       {/* ══ HOME ══ */}
       {screen === "home" && (
-        <div style={S.page}>
-          <div style={{ textAlign:"center", marginBottom:28 }}>
-            <div className="float" style={{ fontSize:72, lineHeight:1 }}>🎯</div>
-            <h1 style={S.mainTitle}>你说我猜</h1>
-            <p style={S.sub}>翻牌猜词 · 限时挑战</p>
-          </div>
-          <div style={S.ruleBox}>
-            <div style={S.ruleHead}>📖 游戏规则</div>
-            {[
-              ["1","一人当描述者，拿着手机"],
-              ["2","屏幕显示词语，用语言描述给大家"],
-              ["3","❌ 不能直接说出词语！"],
-              ["←","猜对了 → 左滑 或 按 ✅"],
-              ["→","猜不出 → 右滑 或 按 ⏭"],
-              ["⏱","时间到或字卡翻完即结束！"],
-            ].map(([icon,text]) => (
-              <div key={icon} style={S.ruleRow}>
-                <span style={S.ruleIcon}>{icon}</span>
-                <span style={S.ruleText}>{text}</span>
+        <div style={S.page} className="page-container">
+          <div className="responsive-container home-layout">
+            <div className="main-section hero-brand-section">
+              <div style={{ textAlign:"center", marginBottom: 28, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <img src="/logo.png" className="app-logo float" alt="你说我猜 logo" />
+                <h1 style={S.mainTitle} className="brand-title">你说我猜</h1>
+                <p style={S.sub} className="brand-subtitle">经典派对翻牌猜词 · 限时激情挑战</p>
               </div>
-            ))}
+              <button style={S.bigBtn} className="action-btn-main" onClick={() => setScreen("category")}>开始游戏 →</button>
+            </div>
+            
+            <div className="side-section home-rules-section">
+              <div style={S.ruleBox} className="premium-panel">
+                <div style={S.ruleHead} className="panel-header">📖 游戏规则</div>
+                {[
+                  ["1","一人当描述者，拿着手机"],
+                  ["2","屏幕显示词语，用语言描述给大家"],
+                  ["3","❌ 不能直接说出词语！"],
+                  ["←","猜对了 → 左滑 或 按 ✅"],
+                  ["→","猜不出 → 右滑 或 按 ⏭"],
+                  ["⏱","时间到或字卡翻完即结束！"],
+                ].map(([icon,text]) => (
+                  <div key={icon} style={S.ruleRow} className="rule-item">
+                    <span style={S.ruleIcon} className="rule-badge">{icon}</span>
+                    <span style={S.ruleText}>{text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-          <button style={S.bigBtn} onClick={() => setScreen("category")}>开始游戏 →</button>
         </div>
       )}
 
       {/* ══ CATEGORY ══ */}
       {screen === "category" && (
-        <div style={S.page}>
-          <button style={S.ghost} onClick={() => setScreen("home")}>← 返回</button>
+        <div style={S.page} className="page-container">
+          <button style={S.ghost} className="ghost-back" onClick={() => setScreen("home")}>← 返回</button>
           <h2 style={{ ...S.mainTitle, fontSize:26, marginBottom:6 }}>选择分类</h2>
           <p style={{ color:"#94a3b8", fontSize:13, marginBottom:18, textAlign:"center" }}>选你们最想玩的主题</p>
 
@@ -496,11 +539,11 @@ export default function App() {
             <div style={S.allArrow}>→</div>
           </div>
 
-          <div style={S.catGrid}>
+          <div className="cat-grid">
             {CATEGORIES.map(cat => {
               const m = CATEGORY_META[cat];
               return (
-                <div key={cat} className="cc" style={{ ...S.catCard,
+                <div key={cat} className="cc cat-card" style={{ ...S.catCard,
                   background:`linear-gradient(145deg,${m.from},${m.to})`,
                   outline: category === cat ? "3px solid white" : "none" }}
                   onClick={() => { setCategory(cat); setScreen("setup"); }}>
@@ -515,210 +558,314 @@ export default function App() {
 
       {/* ══ SETUP ══ */}
       {screen === "setup" && (
-        <div style={S.page}>
-          <button style={S.ghost} onClick={() => setScreen("category")}>← 返回</button>
-          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
-            <span style={{ fontSize:28 }}>{meta.emoji}</span>
-            <h2 style={{ ...S.mainTitle, fontSize:24 }}>{category}</h2>
-          </div>
+        <div style={S.page} className="page-container">
+          <button style={S.ghost} className="ghost-back" onClick={() => setScreen("category")}>← 返回</button>
+          
+          <div className="responsive-container setup-layout">
+            <div className="main-section setup-options-section">
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
+                <span style={{ fontSize:32 }}>{meta.emoji}</span>
+                <h2 style={{ ...S.mainTitle, fontSize:28, marginTop:0 }}>{category}</h2>
+              </div>
 
-          {/* deck status */}
-          <div style={S.deckStatus}>
-            <div style={S.deckInfo}>
-              <span style={{ color:"#64748b", fontSize:13 }}>剩余未用字卡</span>
-              <span style={{ fontWeight:900, color: remaining < 20 ? "#ef4444" : "#22c55e", fontSize:20 }}>
-                {remaining} / {totalWords}
-              </span>
-            </div>
-            {usedCount > 0 && (
-              <button style={S.resetBtn} onClick={() => setUsedWords(new Set())}>
-                🔄 重置字卡库
+              {/* difficulty */}
+              <div style={S.section} className="premium-panel flex-panel">
+                <div style={S.sectionLabel} className="panel-label">难易度</div>
+                <div style={S.optRow} className="opt-row-difficulty">
+                  {Object.entries(DIFFICULTY_META).map(([k, v]) => (
+                    <button key={k} style={{ ...S.optBtn,
+                      background: difficulty === k ? v.color : "#f1f5f9",
+                      color: difficulty === k ? "white" : "#64748b",
+                      boxShadow: difficulty === k ? `0 4px 12px ${v.color}55` : "none" }}
+                      className={`opt-btn-diff ${difficulty === k ? 'active' : ''}`}
+                      onClick={() => setDifficulty(k)}>
+                      <span style={{ fontSize:18, fontWeight:900 }}>{v.label}</span>
+                      <span style={{ fontSize:11 }}>{v.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* minutes */}
+              <div style={S.section} className="premium-panel">
+                <div style={S.sectionLabel} className="panel-label">回合时长</div>
+                <div style={S.optRow} className="opt-row-minutes">
+                  {[1,2,3,4,5].map(m => (
+                    <button key={m} style={{ ...S.optBtnSq,
+                      background: minutes === m ? "#7c3aed" : "#f1f5f9",
+                      color: minutes === m ? "white" : "#64748b",
+                      boxShadow: minutes === m ? "0 4px 12px #7c3aed55" : "none" }}
+                      className={`opt-btn-sq ${minutes === m ? 'active' : ''}`}
+                      onClick={() => setMinutes(m)}>
+                      {m}分
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* card count */}
+              <div style={S.section} className="premium-panel">
+                <div style={S.sectionLabel} className="panel-label">本轮字卡数</div>
+                <div style={S.optRow} className="opt-row-cards">
+                  {[15,20,30,40,50].map(n => (
+                    <button key={n} style={{ ...S.optBtnSq,
+                      background: cardCount === n ? "#7c3aed" : "#f1f5f9",
+                      color: cardCount === n ? "white" : "#64748b",
+                      boxShadow: cardCount === n ? "0 4px 12px #7c3aed55" : "none",
+                      opacity: n > remaining && remaining > 0 ? 0.45 : 1 }}
+                      className={`opt-btn-sq ${cardCount === n ? 'active' : ''}`}
+                      onClick={() => setCardCount(n)}>
+                      {n}张
+                    </button>
+                  ))}
+                </div>
+                {cardCount > remaining && remaining > 0 && (
+                  <p style={{ fontSize:12, color:"#f59e0b", marginTop:8, textAlign:"center" }}>
+                    ⚠️ 剩余 {remaining} 张，将先用完再循环
+                  </p>
+                )}
+              </div>
+
+              <button style={{ ...S.bigBtn, marginTop:18 }} className="action-btn-main start-game-btn" onClick={startGame}>
+                开始！🚀
               </button>
-            )}
-          </div>
+            </div>
+            
+            <div className="side-section setup-status-section">
+              {/* deck status */}
+              <div style={S.deckStatus} className="premium-panel deck-status-panel">
+                <div style={S.deckInfo}>
+                  <span style={{ color:"#64748b", fontSize:13 }}>当前分类字卡池</span>
+                  <span style={{ fontWeight:900, color: remaining < 20 ? "#ef4444" : "#22c55e", fontSize:24, marginTop:4 }}>
+                    {remaining} / {totalWords}
+                  </span>
+                  <span style={{ color:"#94a3b8", fontSize:11, marginTop:2 }}>未使用的字卡数</span>
+                </div>
+                {usedCount > 0 && (
+                  <button style={S.resetBtn} className="reset-deck-btn" onClick={() => setUsedWords(new Set())}>
+                    🔄 重置卡库
+                  </button>
+                )}
+              </div>
 
-          {/* difficulty */}
-          <div style={S.section}>
-            <div style={S.sectionLabel}>难易度</div>
-            <div style={S.optRow}>
-              {Object.entries(DIFFICULTY_META).map(([k, v]) => (
-                <button key={k} style={{ ...S.optBtn,
-                  background: difficulty === k ? v.color : "#f1f5f9",
-                  color: difficulty === k ? "white" : "#64748b",
-                  boxShadow: difficulty === k ? `0 4px 12px ${v.color}55` : "none" }}
-                  onClick={() => setDifficulty(k)}>
-                  <span style={{ fontSize:16, fontWeight:900 }}>{v.label}</span>
-                  <span style={{ fontSize:11 }}>{v.desc}</span>
-                </button>
-              ))}
+              {/* Game Setup Card Summary (Desktop only) */}
+              <div className="premium-panel setup-summary-panel desktop-only">
+                <div className="summary-title">🎮 选项摘要</div>
+                <div className="summary-item">
+                  <span className="summary-label">主题</span>
+                  <span className="summary-value highlight">{meta.emoji} {category}</span>
+                </div>
+                <div className="summary-item">
+                  <span className="summary-label">难度</span>
+                  <span className="summary-value" style={{ color: difMeta.color, fontWeight: 900 }}>{difMeta.label} ({difMeta.desc})</span>
+                </div>
+                <div className="summary-item">
+                  <span className="summary-label">限时</span>
+                  <span className="summary-value">{minutes} 分钟 ({minutes * 60} 秒)</span>
+                </div>
+                <div className="summary-item">
+                  <span className="summary-label">字卡</span>
+                  <span className="summary-value">{cardCount} 张 / 局</span>
+                </div>
+              </div>
             </div>
           </div>
-
-          {/* minutes */}
-          <div style={S.section}>
-            <div style={S.sectionLabel}>回合时长</div>
-            <div style={S.optRow}>
-              {[1,2,3,4,5].map(m => (
-                <button key={m} style={{ ...S.optBtnSq,
-                  background: minutes === m ? "#7c3aed" : "#f1f5f9",
-                  color: minutes === m ? "white" : "#64748b",
-                  boxShadow: minutes === m ? "0 4px 12px #7c3aed55" : "none" }}
-                  onClick={() => setMinutes(m)}>
-                  {m}分
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* card count */}
-          <div style={S.section}>
-            <div style={S.sectionLabel}>本轮字卡数</div>
-            <div style={S.optRow}>
-              {[15,20,30,40,50].map(n => (
-                <button key={n} style={{ ...S.optBtnSq,
-                  background: cardCount === n ? "#7c3aed" : "#f1f5f9",
-                  color: cardCount === n ? "white" : "#64748b",
-                  boxShadow: cardCount === n ? "0 4px 12px #7c3aed55" : "none",
-                  opacity: n > remaining && remaining > 0 ? 0.45 : 1 }}
-                  onClick={() => setCardCount(n)}>
-                  {n}张
-                </button>
-              ))}
-            </div>
-            {cardCount > remaining && remaining > 0 && (
-              <p style={{ fontSize:12, color:"#f59e0b", marginTop:8, textAlign:"center" }}>
-                ⚠️ 剩余 {remaining} 张，将先用完再循环
-              </p>
-            )}
-          </div>
-
-          <button style={{ ...S.bigBtn, marginTop:8 }} onClick={startGame}>
-            开始！🚀
-          </button>
         </div>
       )}
 
       {/* ══ GAME ══ */}
       {screen === "game" && roundWords.length > 0 && (
-        <div style={{ ...S.gamePage, background: meta.bg }}
+        <div style={{ ...S.gamePage, background: meta.bg }} className="game-page-container"
           onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
 
-          <div style={S.hdr}>
-            <div style={S.pill("#dcfce7","#16a34a")}>✅ {correct}</div>
-            <div style={{ position:"relative", width:60, height:60 }}>
-              <svg width="60" height="60" style={{ position:"absolute", top:0, left:0 }}>
-                <circle cx="30" cy="30" r="26" fill="none" stroke="#e2e8f0" strokeWidth="5"/>
-                <circle cx="30" cy="30" r="26" fill="none" stroke={tColor} strokeWidth="5"
-                  strokeDasharray={circ} strokeDashoffset={circ*(1-pct)}
-                  strokeLinecap="round" transform="rotate(-90 30 30)"
-                  style={{ transition:"stroke-dashoffset 1s linear,stroke 0.5s" }}/>
-              </svg>
-              <span style={{ position:"absolute", inset:0, display:"flex", alignItems:"center",
-                justifyContent:"center", fontSize:15, fontWeight:900, color:tColor }}>{timeLeft}</span>
-            </div>
-            <div style={S.pill("#fee2e2","#dc2626")}>⏭ {skipped}</div>
-          </div>
-
-          <div style={{ textAlign:"center", marginBottom:12, display:"flex", gap:8, justifyContent:"center" }}>
-            <span style={{ ...S.badge, background:`linear-gradient(90deg,${meta.from},${meta.to})` }}>
-              {meta.emoji} {category}
-            </span>
-            <span style={{ ...S.badge, background: difMeta.color }}>
-              {difMeta.label}
-            </span>
-          </div>
-
-          <div style={S.stack}>
-            {idx+2 < roundWords.length && <div style={{ ...S.ghost2, transform:"scale(0.84) translateY(22px)", opacity:0.3 }}/>}
-            {idx+1 < roundWords.length && <div style={{ ...S.ghost2, transform:"scale(0.92) translateY(11px)", opacity:0.55 }}/>}
-            <div key={idx}
-              className={animDir==="left"?"sl":animDir==="right"?"sr":"ce"}
-              style={{ ...S.card, background:`linear-gradient(150deg,${meta.from},${meta.to})` }}>
-              <div style={S.cardCounter}>{idx+1} / {roundWords.length}</div>
-              <div style={S.cardWord}>{roundWords[idx]}</div>
-              <div style={S.hint}>
-                <span>← 猜对了</span>
-                <span style={{ opacity:0.4 }}>｜</span>
-                <span>跳过 →</span>
+          <div className="responsive-container game-layout">
+            
+            {/* Left side panel: Stats & Shortcuts (Desktop only) */}
+            <div className="side-section game-left-section desktop-only">
+              <div className="premium-panel game-meta-panel">
+                <div className="game-section-title">📍 当前局信息</div>
+                <div className="meta-badge-row">
+                  <span style={{ ...S.badge, background:`linear-gradient(90deg,${meta.from},${meta.to})`, fontSize: 14 }}>
+                    {meta.emoji} {category}
+                  </span>
+                  <span style={{ ...S.badge, background: difMeta.color, fontSize: 14 }}>
+                    {difMeta.label}
+                  </span>
+                </div>
+                
+                <div style={{ marginTop: 24 }}>
+                  <div className="shortcut-title">⌨️ 键盘快捷键</div>
+                  <div className="shortcut-item"><kbd>Space</kbd> 或 <kbd>Enter</kbd> 或 <kbd>←</kbd> ＝ 猜对</div>
+                  <div className="shortcut-item"><kbd>Esc</kbd> 或 <kbd>→</kbd> ＝ 跳过</div>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div style={S.progBg}>
-            <div style={{ ...S.progFill, width:`${(idx/roundWords.length)*100}%`,
-              background:`linear-gradient(90deg,${meta.from},${meta.to})` }}/>
-          </div>
+            {/* Center: Main Game Play Area */}
+            <div className="main-section game-play-section">
+              <div style={S.hdr} className="game-header">
+                <div style={S.pill("#dcfce7","#16a34a")} className="game-score-pill correct-pill">✅ {correct}</div>
+                <div className="timer-wrapper" style={{ position:"relative", width:60, height:60 }}>
+                  <svg width="60" height="60" style={{ position:"absolute", top:0, left:0 }}>
+                    <circle cx="30" cy="30" r="26" fill="none" stroke="#e2e8f0" strokeWidth="5"/>
+                    <circle cx="30" cy="30" r="26" fill="none" stroke={tColor} strokeWidth="5"
+                      strokeDasharray={circ} strokeDashoffset={circ*(1-pct)}
+                      strokeLinecap="round" transform="rotate(-90 30 30)"
+                      style={{ transition:"stroke-dashoffset 1s linear,stroke 0.5s" }}/>
+                  </svg>
+                  <span style={{ position:"absolute", inset:0, display:"flex", alignItems:"center",
+                    justifyContent:"center", fontSize:18, fontWeight:900, color:tColor }}>{timeLeft}</span>
+                </div>
+                <div style={S.pill("#fee2e2","#dc2626")} className="game-score-pill skip-pill">⏭ {skipped}</div>
+              </div>
 
-          <div style={S.actions}>
-            <button style={S.skipBig} onClick={() => advance("skip")}>
-              <span style={{ fontSize:30 }}>⏭</span><span>跳过</span>
-            </button>
-            <button style={S.okBig} onClick={() => advance("correct")}>
-              <span style={{ fontSize:30 }}>✅</span><span>猜对了！</span>
-            </button>
+              {/* Mobile-only tags */}
+              <div className="mobile-only" style={{ textAlign:"center", marginBottom:12, display:"flex", gap:8, justifyContent:"center" }}>
+                <span style={{ ...S.badge, background:`linear-gradient(90deg,${meta.from},${meta.to})` }}>
+                  {meta.emoji} {category}
+                </span>
+                <span style={{ ...S.badge, background: difMeta.color }}>
+                  {difMeta.label}
+                </span>
+              </div>
+
+              <div style={S.stack} className="card-stack-container">
+                {idx+2 < roundWords.length && <div style={{ ...S.ghost2, transform:"scale(0.84) translateY(22px)", opacity:0.3 }} className="stack-layer-3"/>}
+                {idx+1 < roundWords.length && <div style={{ ...S.ghost2, transform:"scale(0.92) translateY(11px)", opacity:0.55 }} className="stack-layer-2"/>}
+                <div key={idx}
+                  className={`card-item ${animDir==="left"?"sl":animDir==="right"?"sr":"ce"}`}
+                  style={{ ...S.card, background:`linear-gradient(150deg,${meta.from},${meta.to})` }}>
+                  <div style={S.cardCounter} className="card-counter">{idx+1} / {roundWords.length}</div>
+                  <div style={S.cardWord} className="card-word">{roundWords[idx]}</div>
+                  <div style={S.hint} className="card-drag-hint">
+                    <span>← 猜对了 (左滑)</span>
+                    <span style={{ opacity:0.4 }}>｜</span>
+                    <span>跳过 (右滑) →</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={S.progBg} className="progress-bar-bg">
+                <div style={{ ...S.progFill, width:`${(idx/roundWords.length)*100}%`,
+                  background:`linear-gradient(90deg,${meta.from},${meta.to})` }} className="progress-bar-fill"/>
+              </div>
+
+              <div style={S.actions} className="game-actions-row">
+                <button style={S.skipBig} className="game-action-btn skip-btn" onClick={() => advance("skip")}>
+                  <span style={{ fontSize:30 }}>⏭</span><span>跳过</span>
+                </button>
+                <button style={S.okBig} className="game-action-btn correct-btn" onClick={() => advance("correct")}>
+                  <span style={{ fontSize:30 }}>✅</span><span>猜对了！</span>
+                </button>
+              </div>
+              <button style={S.ghost} className="end-game-early" onClick={endGame}>结束本轮</button>
+            </div>
+
+            {/* Right side panel: Guessed History List (Desktop only) */}
+            <div className="side-section game-right-section desktop-only">
+              <div className="premium-panel live-scoreboard-panel">
+                <div className="game-section-title">📊 本轮答题明细</div>
+                <div className="scoreboard-list" style={{ maxHeight: "300px", overflowY: "auto" }}>
+                  {results.length === 0 ? (
+                    <div className="scoreboard-empty">暂无答题记录，开始描述吧！</div>
+                  ) : (
+                    results.map((r, i) => (
+                      <div key={i} className={`scoreboard-item ${r.status}`} style={{
+                        display: "flex", alignItems: "center", gap: 8, padding: "8px 12px",
+                        borderRadius: 10, marginBottom: 6, fontSize: 13, fontWeight: 700,
+                        background: r.status === "correct" ? "#f0fdf4" : "#fff1f0",
+                        color: r.status === "correct" ? "#16a34a" : "#dc2626",
+                        border: r.status === "correct" ? "1px solid #bbf7d0" : "1px solid #fecaca"
+                      }}>
+                        <span>{r.status === "correct" ? "✅" : "⏭"}</span>
+                        <span>第 {i+1} 题:</span>
+                        <span style={{ marginLeft: "auto" }}>{r.word}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
           </div>
-          <button style={S.ghost} onClick={endGame}>结束本轮</button>
         </div>
       )}
 
       {/* ══ RESULT ══ */}
       {screen === "result" && (
-        <div style={S.page}>
-          <div className="float" style={{ fontSize:80, textAlign:"center", marginBottom:16 }}>
-            {correct >= 15?"🏆":correct>=10?"🥳":correct>=5?"👍":"💪"}
-          </div>
-          <div style={S.resCard}>
-            <div style={S.resTitle}>本轮结束！</div>
-            <div style={S.bigNum}>{correct}<span style={{ fontSize:20, color:"#94a3b8", marginLeft:4 }}>个</span></div>
-            <div style={{ color:"#94a3b8", fontSize:13, marginBottom:16 }}>猜对数量</div>
-            <div style={S.stats}>
-              {[
-                { icon:"✅", val:correct, col:"#22c55e", label:"猜对" },
-                { icon:"⏭", val:skipped, col:"#f97316", label:"跳过" },
-                { icon:"⏱", val:`${minutes*60-timeLeft}s`, col:"#60a5fa", label:"用时" },
-              ].map(s=>(
-                <div key={s.label} style={S.statBox}>
-                  <span style={{ fontSize:26 }}>{s.icon}</span>
-                  <span style={{ fontSize:20, fontWeight:900, color:s.col }}>{s.val}</span>
-                  <span style={{ fontSize:11, color:"#94a3b8" }}>{s.label}</span>
+        <div style={S.page} className="page-container">
+          <div className="responsive-container result-layout">
+            
+            {/* Left Section: Score & Navigation */}
+            <div className="main-section result-score-section">
+              <div className="float" style={{ fontSize:80, textAlign:"center", marginBottom:16 }}>
+                {correct >= 15?"🏆":correct>=10?"🥳":correct>=5?"👍":"💪"}
+              </div>
+              
+              <div style={S.resCard} className="premium-panel result-card-panel">
+                <div style={S.resTitle} className="panel-header">本轮结束！</div>
+                <div style={S.bigNum} className="big-score-number">{correct}<span style={{ fontSize:20, color:"#94a3b8", marginLeft:4 }}>个</span></div>
+                <div style={{ color:"#94a3b8", fontSize:13, marginBottom:16 }}>猜对数量</div>
+                
+                <div style={S.stats} className="result-stats-row">
+                  {[
+                    { icon:"✅", val:correct, col:"#22c55e", label:"猜对" },
+                    { icon:"⏭", val:skipped, col:"#f97316", label:"跳过" },
+                    { icon:"⏱", val:`${minutes*60-timeLeft}s`, col:"#60a5fa", label:"用时" },
+                  ].map(s=>(
+                    <div key={s.label} style={S.statBox} className="result-stat-box">
+                      <span style={{ fontSize:26 }}>{s.icon}</span>
+                      <span style={{ fontSize:20, fontWeight:900, color:s.col }}>{s.val}</span>
+                      <span style={{ fontSize:11, color:"#94a3b8" }}>{s.label}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div style={S.medal}>
-              {correct>=15?"🏆 传奇猜词王！":correct>=10?"🥳 非常棒！继续！":correct>=5?"👍 不错哦！再来！":"💪 加油！下次更好！"}
-            </div>
-          </div>
+                
+                <div style={S.medal} className="result-medal-badge">
+                  {correct>=15?"🏆 传奇猜词王！":correct>=10?"🥳 非常棒！继续！":correct>=5?"👍 不错哦！再来！":"💪 加油！下次更好！"}
+                </div>
+              </div>
 
-          {/* deck remaining info */}
-          <div style={S.deckStatus}>
-            <div style={S.deckInfo}>
-              <span style={{ color:"#64748b", fontSize:13 }}>本分类剩余字卡</span>
-              <span style={{ fontWeight:900, fontSize:18, color: remaining-roundWords.length < 20 ? "#ef4444":"#22c55e" }}>
-                {Math.max(0, remaining - roundWords.length)} / {totalWords}
-              </span>
-            </div>
-          </div>
-
-          {results.length > 0 && (
-            <div style={S.history}>
-              <div style={S.histTitle}>📋 本轮回顾</div>
-              <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
-                {results.map((r,i)=>(
-                  <span key={i} style={{ ...S.tag,
-                    background:r.status==="correct"?"#f0fdf4":"#fff1f0",
-                    color:r.status==="correct"?"#16a34a":"#dc2626",
-                    borderColor:r.status==="correct"?"#86efac":"#fca5a5" }}>
-                    {r.status==="correct"?"✅":"⏭"} {r.word}
-                  </span>
-                ))}
+              {/* Action buttons under the score card on desktop */}
+              <div className="result-actions-wrapper">
+                <button style={S.bigBtn} className="action-btn-main play-again-btn" onClick={() => setScreen("setup")}>再来一轮 🔄</button>
+                <button style={{ ...S.bigBtn, background:"linear-gradient(135deg,#475569,#334155)", marginTop:12 }}
+                  className="action-btn-main change-cat-btn"
+                  onClick={() => { setCategory(null); setScreen("category"); }}>换分类 🎯</button>
+                <button style={{ ...S.ghost, marginTop:12 }} className="ghost-back-home" onClick={() => setScreen("home")}>回到首页</button>
               </div>
             </div>
-          )}
+            
+            {/* Right Section: Word Checklist History & Deck info */}
+            <div className="side-section result-history-section">
+              <div style={S.deckStatus} className="premium-panel deck-status-panel">
+                <div style={S.deckInfo}>
+                  <span style={{ color:"#64748b", fontSize:13 }}>本分类剩余未用字卡</span>
+                  <span style={{ fontWeight:900, fontSize:20, color: remaining-roundWords.length < 20 ? "#ef4444":"#22c55e", marginTop: 4 }}>
+                    {Math.max(0, remaining - roundWords.length)} / {totalWords}
+                  </span>
+                </div>
+              </div>
 
-          <button style={S.bigBtn} onClick={() => setScreen("setup")}>再来一轮 🔄</button>
-          <button style={{ ...S.bigBtn, background:"linear-gradient(135deg,#475569,#334155)", marginTop:12 }}
-            onClick={() => { setCategory(null); setScreen("category"); }}>换分类 🎯</button>
-          <button style={{ ...S.ghost, marginTop:12 }} onClick={() => setScreen("home")}>回到首页</button>
+              {results.length > 0 && (
+                <div style={S.history} className="premium-panel history-review-panel">
+                  <div style={S.histTitle} className="panel-header-sub">📋 本轮回顾</div>
+                  <div className="review-tag-cloud" style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                    {results.map((r,i)=>(
+                      <span key={i} style={{ ...S.tag,
+                        background:r.status==="correct"?"#f0fdf4":"#fff1f0",
+                        color:r.status==="correct"?"#16a34a":"#dc2626",
+                        borderColor:r.status==="correct"?"#86efac":"#fca5a5" }}
+                        className={`review-tag ${r.status}`}>
+                        {r.status==="correct"?"✅":"⏭"} {r.word}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+          </div>
         </div>
       )}
     </div>
@@ -743,10 +890,421 @@ body{font-family:'Nunito',sans-serif;background:#f8fafc;}
 .cc{transition:transform .15s;}
 .cc:active{transform:scale(0.93)!important;}
 button:active{opacity:0.82;}
+
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE DESIGN SYSTEM & MODERN LAYOUT RULES
+   ═══════════════════════════════════════════════════════ */
+
+/* Global App Container */
+.app-container {
+  min-height: 100vh;
+  width: 100%;
+  margin: 0 auto;
+  font-family: 'Nunito', sans-serif;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 767px) {
+  .app-container {
+    max-width: 430px;
+  }
+}
+@media (min-width: 768px) {
+  .app-container {
+    max-width: 768px;
+  }
+}
+@media (min-width: 1024px) {
+  .app-container {
+    max-width: 1200px;
+    padding: 0 24px;
+  }
+}
+
+/* Global Sticky Header */
+.global-header {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 14px 24px;
+}
+.header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.header-logo {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(124, 58, 237, 0.15));
+}
+.header-titles {
+  display: flex;
+  flex-direction: column;
+}
+.header-title {
+  font-size: 17px;
+  font-weight: 900;
+  color: #1e293b;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+.header-tagline {
+  font-size: 9px;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+  margin-top: 1px;
+}
+.header-actions {
+  display: flex;
+  gap: 14px;
+}
+.header-nav-btn {
+  background: none;
+  border: none;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #64748b;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+.header-nav-btn:hover {
+  color: #7c3aed;
+  background: #faf5ff;
+}
+
+@media (max-width: 767px) {
+  .global-header {
+    display: none; /* Hide on mobile to keep original simple layout integrity */
+  }
+}
+
+/* Page Containers */
+.page-container {
+  width: 100%;
+}
+@media (min-width: 1024px) {
+  .page-container {
+    padding: 30px 10px 50px !important;
+  }
+}
+
+/* 2-Column Responsive Layout */
+.responsive-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 24px;
+}
+@media (min-width: 1024px) {
+  .responsive-container {
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: space-between;
+    margin-top: 16px;
+  }
+  .main-section {
+    flex: 1;
+    min-width: 0;
+  }
+  .side-section {
+    width: 380px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+}
+
+/* Home Screen Enhancements */
+.app-logo {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 12px 24px rgba(124, 58, 237, 0.25));
+}
+.brand-title {
+  background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+@media (min-width: 1024px) {
+  .home-layout {
+    align-items: center;
+    min-height: calc(100vh - 160px);
+  }
+  .hero-brand-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-right: 40px;
+  }
+  .home-rules-section {
+    width: 440px !important;
+  }
+}
+
+/* Category Grid adjustments */
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+.cat-card {
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.cat-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.15) !important;
+}
+@media (min-width: 768px) {
+  .cat-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+}
+@media (min-width: 1024px) {
+  .cat-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+}
+
+/* Premium Panel Styling */
+.premium-panel {
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.03) !important;
+  transition: all 0.3s ease;
+}
+.premium-panel:hover {
+  box-shadow: 0 10px 28px rgba(124, 58, 237, 0.05) !important;
+  border-color: rgba(124, 58, 237, 0.2) !important;
+}
+
+/* Difficulty Option Adjustments */
+@media (min-width: 768px) {
+  .opt-row-difficulty, .opt-row-minutes, .opt-row-cards {
+    gap: 12px !important;
+  }
+  .opt-btn-diff, .opt-btn-sq {
+    padding: 16px 8px !important;
+    font-size: 16px !important;
+    border-radius: 16px !important;
+  }
+}
+.opt-btn-diff:hover, .opt-btn-sq:hover {
+  transform: translateY(-2px);
+  filter: brightness(0.96);
+}
+.opt-btn-diff.active, .opt-btn-sq.active {
+  transform: translateY(-2px) scale(1.01);
+}
+
+/* Setup Settings Summary Card */
+.summary-title {
+  font-weight: 900;
+  font-size: 15px;
+  color: #1e293b;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 8px;
+  text-align: left;
+}
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.summary-label {
+  color: #64748b;
+}
+.summary-value {
+  color: #1e293b;
+}
+.summary-value.highlight {
+  background: #faf5ff;
+  color: #7c3aed;
+  padding: 4px 10px;
+  border-radius: 50px;
+  font-size: 12px;
+  border: 1px solid #f3e8ff;
+}
+
+/* Active Game Section Layout overrides */
+@media (min-width: 1024px) {
+  .game-layout {
+    align-items: stretch !important;
+    height: calc(100vh - 160px);
+    margin-top: 24px !important;
+  }
+  .game-left-section {
+    width: 280px !important;
+  }
+  .game-play-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+  .game-right-section {
+    width: 320px !important;
+  }
+}
+
+/* Game Card stack visual scaling for desktop */
+@media (min-width: 768px) {
+  .card-item {
+    padding: 70px 40px 56px !important;
+    gap: 20px !important;
+    border-radius: 40px !important;
+  }
+  .card-word {
+    font-size: 80px !important;
+    letter-spacing: 8px !important;
+  }
+  .card-counter {
+    font-size: 15px !important;
+    margin-bottom: 8px !important;
+  }
+  .card-drag-hint {
+    font-size: 14px !important;
+    margin-top: 8px !important;
+  }
+}
+
+/* Keyboard Shortcut Visuals */
+.shortcut-title {
+  font-weight: 900;
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: left;
+}
+.shortcut-item {
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+kbd {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-bottom: 3.5px solid #94a3b8;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  color: #1e293b;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+}
+
+/* Scrollbars for Live Scoreboard and History lists */
+.scoreboard-list::-webkit-scrollbar {
+  width: 6px;
+}
+.scoreboard-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scoreboard-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 99px;
+}
+.scoreboard-empty {
+  color: #94a3b8;
+  font-size: 12px;
+  text-align: center;
+  padding: 40px 20px;
+  font-weight: 700;
+  border: 2px dashed #e2e8f0;
+  border-radius: 14px;
+}
+.game-meta-panel, .live-scoreboard-panel {
+  background: white;
+  border-radius: 20px;
+  padding: 22px 20px;
+  height: 100%;
+}
+.game-section-title {
+  font-weight: 900;
+  font-size: 15px;
+  color: #1e293b;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 8px;
+  text-align: left;
+}
+.meta-badge-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* Result panel layout overrides */
+@media (min-width: 1024px) {
+  .result-layout {
+    align-items: flex-start !important;
+  }
+  .result-score-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .result-actions-wrapper {
+    width: 100%;
+    max-width: 440px;
+    margin-top: 10px;
+  }
+}
+
+/* Utility hide/show helpers */
+.desktop-only {
+  display: none !important;
+}
+@media (min-width: 1024px) {
+  .desktop-only {
+    display: block !important;
+  }
+  .mobile-only {
+    display: none !important;
+  }
+}
 `;
 
 const S = {
-  root:{ minHeight:"100vh", maxWidth:430, margin:"0 auto", fontFamily:"'Nunito',sans-serif", background:"#f8fafc" },
+  root:{ minHeight:"100vh", fontFamily:"'Nunito',sans-serif", background:"#f8fafc" },
   page:{ padding:"32px 18px 44px", display:"flex", flexDirection:"column", alignItems:"center", minHeight:"100vh" },
   mainTitle:{ fontSize:36, fontWeight:900, color:"#1e293b", textAlign:"center", letterSpacing:-1, marginTop:10 },
   sub:{ color:"#94a3b8", fontSize:14, textAlign:"center", marginTop:5, marginBottom:4 },

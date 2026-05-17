@@ -1,8 +1,104 @@
-# React + Vite
+# 🏆 你说我猜 (You Say I Guess) — Premium Party Card Game
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+🎉 **“你说我猜”** 是一款专为多人聚会、团队拓展与家庭娱乐打造的经典翻牌猜词游戏。项目基于 **React + Vite** 架构，融合了现代毛玻璃质感（Glassmorphism）与多端响应式网格布局，内置 5000+ 词汇，配合本地化持久排行与键盘控制，致力于为玩家呈献殿堂级的线下社交派对游戏体验。
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🎮 游戏核心玩法
+
+1. **角色分工**：一名玩家担任**描述者**（拿着手机/面向屏幕），其他玩家担任**猜测者**。
+2. **限时挑战**：在规定时间内，描述者通过语言、肢体动作描述屏幕上的词语，引导队友猜出词汇。
+3. **游戏规则**：
+   - ❌ 描述中不能包含任何卡片词汇的汉字、同音字或外语直译。
+   - ✅ 猜对后，左滑屏幕或按 **Space / Enter / ←** 键记录得分。
+   - ⏭ 遇到难题可右滑或按 **Esc / →** 键跳过，不扣分。
+   - ⏱ 回合时间耗尽或所有字卡翻完，游戏即告结束！
+4. **荣耀登榜**：对局结束可输入或随机生成队名，一键保存至本地**排行榜**，记录高光时刻。
+
+---
+
+## ✨ 核心亮点功能
+
+### 1. 🗃 庞大且多梯度的精品词库 (Word Bank)
+- **九大主题**：`动物 🐾` | `食物 🍎` | `职业 👷` | `交通工具 🚀` | `自然 🌿` | `运动 ⚽` | `科学 🔬` | `历史文化 🏛️` | `全部分类 🎲`。
+- **三大难度**：
+  - 🟢 **易**：适合小学低年级，简单易懂。
+  - 🟡 **中**：适合小学高年级，兼顾常识与趣味。
+  - 🔴 **难**：适合初中及以上，充满竞技性与头脑风暴。
+- **卡库自动循环**：智能监测未使用的词卡余额，用尽时自动重置。玩家也可随时手动“🔄 重置卡库”。
+
+### 2. 👥 智能战队命名与 🎲 随机发生器
+- 游戏设置页集成队伍名称配置模块，预填并支持一键刷新随机名称（如 `脑洞大开队 💡`、`快乐翻牌家 🃏`、`无敌智多星 🧠`），大幅提升线下派对的沉浸度与欢快氛围。
+
+### 3. 💾 持久化排行榜与破平局排序算法
+- 成绩完美同步至 `localStorage`。
+- 采用**双键复合排序**：首要按**答对词数**（得分）降序；若得分相同，则按**答题用时**（越少越优秀）升序破平，确保排名的绝对公平性。
+- 精致的 **三甲领奖台 (🥇 🥈 🥉)** 渲染，结合高对比度磨砂玻璃卡片，展现冠军战队的荣耀。
+
+### 4. 🖥 桌面端响应式网格与键盘快捷键
+- **2栏与3栏自适应**：自适应 mobile (430px) 到 1080P Widescreen Desktop，彻底消除两侧空白，优雅利用宽屏展示“当前答题明细”与“配置摘要”。
+- **全键盘手感操纵**：
+  - <kbd>Space</kbd> 或 <kbd>Enter</kbd> 或 <kbd>← (左方向键)</kbd> ＝ **正确 ✅**
+  - <kbd>Esc</kbd> 或 <kbd>→ (右方向键)</kbd> ＝ **跳过 ⏭**
+  - *带有滑动缓冲锁定，杜绝在快速敲击时发生双重跳过。*
+
+---
+
+## 🛠 技术栈与依赖
+
+- **框架**: [React 18](https://react.dev/) + [Vite 8](https://vite.dev/) (极速热重载与模块解耦)
+- **样式**: Vanilla CSS (极简高性能 CSS 变量设计系统)
+- **轻量依赖**:
+  - `lucide-react`: 精美矢量图标支持
+  - `clsx` & `tailwind-merge`: 动态类名合并工具
+
+---
+
+## 📦 项目结构指引
+
+```bash
+word-game/
+├── public/                 # 静态资源 (包括品牌 Logo 与Favicon)
+├── src/
+│   ├── App.jsx             # 核心组件 (包含状态机、5000+词库、CSS 注入与所有游戏视图)
+│   ├── index.css           # 全局样式重置 (去除 Flex 限制，支持 100vh 满屏拉伸)
+│   └── main.jsx            # 挂载点入口 (开启 React StrictMode)
+├── package.json            # 脚本命令与开发环境依赖
+└── vite.config.js          # Vite 构建配置
+```
+
+---
+
+## 🚀 本地开发与部署指南
+
+在本地 Windows 系统的 PowerShell/CMD 环境下运行以下指令：
+
+### 1. 安装项目依赖
+```bash
+npm install
+```
+
+### 2. 启动开发服务器 (Vite Dev Server)
+```bash
+npm run dev
+```
+启动后可在浏览器中打开服务地址（通常为 `http://localhost:5173` 或 `http://localhost:5174`）。
+
+### 3. 构建生产包
+```bash
+npm run build
+```
+
+### 4. 预览生产环境效果
+```bash
+npm run preview
+```
+
+---
+
+## 🎨 视觉设计准则 (Design System)
+
+项目全局贯彻了极高要求的 UI/UX 规范：
+- **卡片堆叠动画**：使用 cubic-bezier 缓动控制词卡划过出场，立体叠层阴影逼真。
+- **玻璃态模糊 (Glassmorphism)**：全局 Sticky 导航栏与设置卡片使用 `backdrop-filter: blur(12px)`。
+- **多彩对比度**：每个主题拥有各自专属的高对比度线性渐变背景色（从 600 到 400 HSL 调和色），保持活泼又不易产生视觉疲劳。

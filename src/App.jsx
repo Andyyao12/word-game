@@ -529,9 +529,34 @@ export default function App() {
         </header>
       )}
 
+      {/* ══ MOBILE NAVIGATION BAR (visible on all screens) ══ */}
+      <nav className="mobile-navigation-bar">
+        <button 
+          className={`mobile-nav-btn ${screen === "home" ? "active" : ""}`}
+          onClick={() => setScreen("home")}
+          aria-label="返回首页">
+          <span className="nav-icon">🏠</span>
+          <span className="nav-label">首页</span>
+        </button>
+        <button 
+          className={`mobile-nav-btn ${screen === "category" ? "active" : ""}`}
+          onClick={() => setScreen("category")}
+          aria-label="分类选择">
+          <span className="nav-icon">📁</span>
+          <span className="nav-label">分类</span>
+        </button>
+        <button 
+          className={`mobile-nav-btn ${screen === "leaderboard" ? "active" : ""}`}
+          onClick={() => setScreen("leaderboard")}
+          aria-label="排行榜">
+          <span className="nav-icon">🏆</span>
+          <span className="nav-label">排行榜</span>
+        </button>
+      </nav>
+
       {/* ══ HOME ══ */}
       {screen === "home" && (
-        <div style={S.page} className="page-container">
+        <div style={{ ...S.page, paddingBottom: "80px" }} className="page-container">
           <div className="responsive-container home-layout">
             <div className="main-section hero-brand-section">
               <div style={{ textAlign:"center", marginBottom: 28, display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -566,7 +591,7 @@ export default function App() {
 
       {/* ══ CATEGORY ══ */}
       {screen === "category" && (
-        <div style={S.page} className="page-container">
+        <div style={{ ...S.page, paddingBottom: "80px" }} className="page-container">
           <button style={S.ghost} className="ghost-back" onClick={() => setScreen("home")}>← 返回</button>
           <h2 style={{ ...S.mainTitle, fontSize:26, marginBottom:6 }}>选择分类</h2>
           <p style={{ color:"#94a3b8", fontSize:13, marginBottom:18, textAlign:"center" }}>选你们最想玩的主题</p>
@@ -602,7 +627,7 @@ export default function App() {
 
       {/* ══ SETUP ══ */}
       {screen === "setup" && (
-        <div style={S.page} className="page-container">
+        <div style={{ ...S.page, paddingBottom: "80px" }} className="page-container">
           <button style={S.ghost} className="ghost-back" onClick={() => setScreen("category")}>← 返回</button>
           
           <div className="responsive-container setup-layout">
@@ -767,7 +792,7 @@ export default function App() {
 
       {/* ══ GAME ══ */}
       {screen === "game" && roundWords.length > 0 && (
-        <div style={{ ...S.gamePage, background: meta.bg }} className="game-page-container"
+        <div style={{ ...S.gamePage, background: meta.bg, paddingBottom: "80px" }} className="game-page-container"
           onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
 
           <div className="responsive-container game-layout">
@@ -887,7 +912,7 @@ export default function App() {
 
       {/* ══ RESULT ══ */}
       {screen === "result" && (
-        <div style={S.page} className="page-container">
+        <div style={{ ...S.page, paddingBottom: "80px" }} className="page-container">
           <div className="responsive-container result-layout">
             
             {/* Left Section: Score & Navigation */}
@@ -1010,7 +1035,7 @@ export default function App() {
 
       {/* ══ LEADERBOARD ══ */}
       {screen === "leaderboard" && (
-        <div style={S.page} className="page-container ce">
+        <div style={{ ...S.page, paddingBottom: "80px" }} className="page-container ce">
           <button style={S.ghost} className="ghost-back" onClick={() => setScreen("home")}>← 返回首页</button>
           
           <div className="responsive-container leaderboard-layout" style={{ maxWidth: 900, margin: "0 auto", width: "100%" }}>
@@ -1238,6 +1263,13 @@ button:active{opacity:0.82;}
   background: #f8fafc;
   display: flex;
   flex-direction: column;
+  padding-bottom: 70px;
+}
+
+@media (min-width: 1025px) {
+  .app-container {
+    padding-bottom: 0;
+  }
 }
 
 @media (max-width: 767px) {
@@ -1332,9 +1364,81 @@ button:active{opacity:0.82;}
   }
 }
 
+/* Mobile Navigation Bar */
+.mobile-navigation-bar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(226, 232, 240, 0.8);
+  z-index: 99;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 1024px) {
+  .mobile-navigation-bar {
+    display: flex;
+  }
+}
+
+.mobile-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: #94a3b8;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  font-family: 'Nunito', sans-serif;
+  flex: 1;
+  height: 100%;
+  border-radius: 8px;
+  margin: 0 4px;
+}
+
+.mobile-nav-btn:hover {
+  color: #7c3aed;
+  background: #faf5ff;
+}
+
+.mobile-nav-btn.active {
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.08);
+  border-bottom: 3px solid #7c3aed;
+  margin-bottom: -1px;
+}
+
+.nav-icon {
+  font-size: 24px;
+  display: block;
+}
+
+.nav-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
 /* Page Containers */
 .page-container {
   width: 100%;
+}
+@media (max-width: 1024px) {
+  .page-container {
+    padding-bottom: 0 !important; /* Padding will be managed per-screen */
+  }
 }
 @media (min-width: 1024px) {
   .page-container {

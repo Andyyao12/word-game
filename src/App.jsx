@@ -329,12 +329,27 @@ const DIFFICULTY_META = {
 // 主组件
 // ═══════════════════════════════════════════════════════
 export default function App() {
-  // screens: home | category | setup | game | result
+  // screens: home | category | setup | game | result | leaderboard
   const [screen, setScreen]       = useState("home");
   const [category, setCategory]   = useState(null);
   const [difficulty, setDifficulty] = useState("易");
   const [minutes, setMinutes]     = useState(3);
   const [cardCount, setCardCount] = useState(30);
+
+  // team and leaderboard setup
+  const [teamName, setTeamName]   = useState(() => {
+    const list = ["脑洞大开队 💡", "快乐翻牌家 🃏", "无敌智多星 🧠", "爱拼才会赢 🏆", "开心超人队 🦸", "绝地反击队 🏹", "勇往直前队 🚀"];
+    return list[Math.floor(Math.random() * list.length)];
+  });
+  const [leaderboard, setLeaderboard] = useState(() => {
+    const stored = localStorage.getItem("word_game_leaderboard");
+    return stored ? JSON.parse(stored) : [];
+  });
+  const [scoreSaved, setScoreSaved] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem("word_game_leaderboard", JSON.stringify(leaderboard));
+  }, [leaderboard]);
 
   // deck management — usedWords persists across rounds within same session
   const [usedWords, setUsedWords] = useState(new Set());
@@ -384,6 +399,7 @@ export default function App() {
     setTimeLeft(minutes * 60);
     setBusy(false);
     setAnimDir(null);
+    setScoreSaved(false);
     setScreen("game");
   };
 
@@ -462,6 +478,33 @@ export default function App() {
   const usedCount  = [...usedWords].filter(w => getAllWords(category || "全部", difficulty).includes(w)).length;
   const remaining  = totalWords - usedCount;
 
+  // ── save score to leaderboard ──
+  const saveToLeaderboard = () => {
+    if (scoreSaved) return;
+    const name = teamName.trim() || `神秘战队_${Math.floor(1000 + Math.random() * 9000)}`;
+    const newRecord = {
+      id: Date.now().toString(),
+      teamName: name,
+      category: category || "全部",
+      difficulty: difficulty,
+      correct: correct,
+      skipped: skipped,
+      timeUsed: minutes * 60 - timeLeft,
+      timestamp: new Date().toLocaleString(),
+    };
+    setLeaderboard(prev => {
+      const next = [...prev, newRecord];
+      return next.sort((a, b) => {
+        if (b.correct !== a.correct) return b.correct - a.correct;
+        return a.timeUsed - b.timeUsed;
+      });
+    });
+    setScoreSaved(true);
+    setTimeout(() => {
+      setScreen("leaderboard");
+    }, 800);
+  };
+
   return (
     <div style={S.root} className="app-container">
       <style>{CSS}</style>
@@ -478,8 +521,9 @@ export default function App() {
               </div>
             </div>
             <div className="header-actions">
-              <button className="header-nav-btn" onClick={() => setScreen("home")}>首页</button>
-              <button className="header-nav-btn" onClick={() => setScreen("category")}>分类</button>
+              <button className={`header-nav-btn ${screen === "home" ? "active" : ""}`} onClick={() => setScreen("home")}>首页</button>
+              <button className={`header-nav-btn ${screen === "category" ? "active" : ""}`} onClick={() => setScreen("category")}>分类</button>
+              <button className={`header-nav-btn ${screen === "leaderboard" ? "active" : ""}`} onClick={() => setScreen("leaderboard")}>排行榜 🏆</button>
             </div>
           </div>
         </header>
@@ -568,6 +612,50 @@ export default function App() {
                 <h2 style={{ ...S.mainTitle, fontSize:28, marginTop:0 }}>{category}</h2>
               </div>
 
+              {/* Team Name Input */}
+              <div style={S.section} className="premium-panel flex-panel">
+                <div style={S.sectionLabel} className="panel-label">队伍 / 选手名称</div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <input
+                    type="text"
+                    placeholder="输入本轮队伍名称，例如：无敌风火轮队 🚀"
+                    value={teamName}
+                    onChange={(e) => setTeamName(e.target.value)}
+                    style={{
+                      flex: 1,
+                      border: "2px solid #e2e8f0",
+                      borderRadius: 14,
+                      padding: "12px 16px",
+                      fontSize: 14,
+                      fontWeight: 800,
+                      fontFamily: "'Nunito', sans-serif",
+                      outline: "none",
+                      color: "#1e293b"
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const list = ["脑洞大开队 💡", "快乐翻牌家 🃏", "无敌智多星 🧠", "爱拼才会赢 🏆", "神笔马良队 🎨", "开心超人队 🦸", "绝地反击队 🏹", "勇往直前队 🚀"];
+                      setTeamName(list[Math.floor(Math.random() * list.length)]);
+                    }}
+                    style={{
+                      background: "#f1f5f9",
+                      border: "none",
+                      borderRadius: 14,
+                      padding: "0 16px",
+                      fontSize: 14,
+                      fontWeight: 800,
+                      color: "#7c3aed",
+                      cursor: "pointer",
+                      fontFamily: "'Nunito', sans-serif"
+                    }}
+                    className="cc"
+                  >
+                    🎲 随机
+                  </button>
+                </div>
+              </div>
+
               {/* difficulty */}
               <div style={S.section} className="premium-panel flex-panel">
                 <div style={S.sectionLabel} className="panel-label">难易度</div>
@@ -652,6 +740,10 @@ export default function App() {
               <div className="premium-panel setup-summary-panel desktop-only">
                 <div className="summary-title">🎮 选项摘要</div>
                 <div className="summary-item">
+                  <span className="summary-label">当前队伍</span>
+                  <span className="summary-value" style={{ fontWeight: 900, color: "#7c3aed" }}>{teamName}</span>
+                </div>
+                <div className="summary-item">
                   <span className="summary-label">主题</span>
                   <span className="summary-value highlight">{meta.emoji} {category}</span>
                 </div>
@@ -684,6 +776,8 @@ export default function App() {
             <div className="side-section game-left-section desktop-only">
               <div className="premium-panel game-meta-panel">
                 <div className="game-section-title">📍 当前局信息</div>
+                <div style={{ fontSize: 13, color: "#64748b", fontWeight: 700, marginBottom: 4, textAlign: "left" }}>当前挑战队伍</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: "#7c3aed", marginBottom: 16, textAlign: "left" }}>{teamName}</div>
                 <div className="meta-badge-row">
                   <span style={{ ...S.badge, background:`linear-gradient(90deg,${meta.from},${meta.to})`, fontSize: 14 }}>
                     {meta.emoji} {category}
@@ -826,6 +920,51 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Leaderboard saving card */}
+              <div style={{ ...S.resCard, marginTop: 12, padding: "18px 20px", textAlign: "left" }} className="premium-panel save-scoreboard-panel">
+                <div style={{ ...S.resTitle, fontSize: 15, marginBottom: 12, display: "flex", alignItems: "center", gap: 6, color: "#1e293b" }}>
+                  <span>🏆 保存本轮成绩到排行榜</span>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    type="text"
+                    placeholder="输入队伍/选手名称"
+                    value={teamName}
+                    onChange={(e) => setTeamName(e.target.value)}
+                    style={{
+                      flex: 1,
+                      border: "2px solid #e2e8f0",
+                      borderRadius: 12,
+                      padding: "10px 14px",
+                      fontSize: 13,
+                      fontWeight: 800,
+                      fontFamily: "'Nunito', sans-serif",
+                      outline: "none",
+                      color: "#1e293b"
+                    }}
+                  />
+                  <button
+                    onClick={saveToLeaderboard}
+                    disabled={scoreSaved}
+                    style={{
+                      background: scoreSaved ? "#22c55e" : "linear-gradient(135deg,#7c3aed,#4f46e5)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: 12,
+                      padding: "0 18px",
+                      fontSize: 13,
+                      fontWeight: 900,
+                      cursor: scoreSaved ? "default" : "pointer",
+                      boxShadow: scoreSaved ? "none" : "0 4px 12px rgba(79,70,229,0.25)",
+                      fontFamily: "'Nunito', sans-serif"
+                    }}
+                    className="cc"
+                  >
+                    {scoreSaved ? "已保存 ✅" : "保存 💾"}
+                  </button>
+                </div>
+              </div>
+
               {/* Action buttons under the score card on desktop */}
               <div className="result-actions-wrapper">
                 <button style={S.bigBtn} className="action-btn-main play-again-btn" onClick={() => setScreen("setup")}>再来一轮 🔄</button>
@@ -865,6 +1004,201 @@ export default function App() {
               )}
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* ══ LEADERBOARD ══ */}
+      {screen === "leaderboard" && (
+        <div style={S.page} className="page-container ce">
+          <button style={S.ghost} className="ghost-back" onClick={() => setScreen("home")}>← 返回首页</button>
+          
+          <div className="responsive-container leaderboard-layout" style={{ maxWidth: 900, margin: "0 auto", width: "100%" }}>
+            <div className="main-section leaderboard-list-section" style={{ width: "100%" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 36 }}>🏆</span>
+                  <h2 style={{ ...S.mainTitle, fontSize: 32, marginTop: 0, textAlign: "left" }}>排行榜</h2>
+                </div>
+                {leaderboard.length > 0 && (
+                  <button
+                    onClick={() => {
+                      if (window.confirm("确定要清除所有排行榜记录吗？此操作无法撤销。")) {
+                        setLeaderboard([]);
+                        localStorage.removeItem("word_game_leaderboard");
+                      }
+                    }}
+                    style={{
+                      background: "#fee2e2",
+                      border: "none",
+                      borderRadius: 10,
+                      padding: "8px 14px",
+                      fontSize: 13,
+                      fontWeight: 800,
+                      color: "#ef4444",
+                      cursor: "pointer",
+                      fontFamily: "'Nunito', sans-serif"
+                    }}
+                    className="cc"
+                  >
+                    🗑️ 清除所有记录
+                  </button>
+                )}
+              </div>
+
+              {leaderboard.length === 0 ? (
+                <div style={{
+                  background: "white",
+                  borderRadius: 24,
+                  padding: "60px 24px",
+                  textAlign: "center",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
+                  border: "1px solid #e2e8f0"
+                }}>
+                  <div style={{ fontSize: 60, marginBottom: 16 }}>🚀</div>
+                  <h3 style={{ fontSize: 20, fontWeight: 900, color: "#1e293b", marginBottom: 8 }}>暂无排行榜记录</h3>
+                  <p style={{ color: "#94a3b8", fontSize: 14, marginBottom: 24 }}>开启一局精彩的你说我猜，并将成绩保存到这里吧！</p>
+                  <button style={{ ...S.bigBtn, maxWidth: 220, margin: "0 auto" }} onClick={() => setScreen("category")}>立即开启对局 🎮</button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {/* Top 3 Podium (visual cards) on desktop */}
+                  <div className="leaderboard-podium" style={{
+                    display: "grid",
+                    gridTemplateColumns: leaderboard.length >= 3 ? "1fr 1.1fr 1fr" : leaderboard.length === 2 ? "1.1fr 1fr" : "1fr",
+                    gap: 16,
+                    marginBottom: 12
+                  }}>
+                    {/* Render up to top 3 in special styled podium blocks */}
+                    {leaderboard.slice(0, 3).map((r, i) => {
+                      const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉";
+                      const gradient = i === 0 
+                        ? "linear-gradient(135deg,#fef08a,#fef9c3)" // Gold
+                        : i === 1 
+                          ? "linear-gradient(135deg,#e2e8f0,#f1f5f9)" // Silver
+                          : "linear-gradient(135deg,#fed7aa,#ffedd5)"; // Bronze
+                      const borderCol = i === 0 ? "#facc15" : i === 1 ? "#cbd5e1" : "#f97316";
+                      return (
+                        <div key={r.id} style={{
+                          background: gradient,
+                          border: `2px solid ${borderCol}`,
+                          borderRadius: 22,
+                          padding: "20px 16px",
+                          textAlign: "center",
+                          boxShadow: i === 0 ? "0 10px 25px rgba(250,204,21,0.22)" : "0 4px 12px rgba(0,0,0,0.03)",
+                          position: "relative",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center"
+                        }} className="podium-card ce">
+                          <span style={{ fontSize: 36, position: "absolute", top: -16 }}>{medal}</span>
+                          <span style={{ fontWeight: 900, fontSize: 16, color: "#1e293b", marginTop: 14, wordBreak: "break-all" }}>{r.teamName}</span>
+                          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 2, marginTop: 10 }}>
+                            <span style={{ fontSize: 32, fontWeight: 900, color: i === 0 ? "#854d0e" : "#334155" }}>{r.correct}</span>
+                            <span style={{ fontSize: 13, color: "#64748b", fontWeight: 700 }}>分</span>
+                          </div>
+                          
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, justifyContent: "center", marginTop: 12 }}>
+                            <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 50, background: "rgba(255,255,255,0.7)", fontWeight: 800, color: "#475569" }}>
+                              {r.category}
+                            </span>
+                            <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 50, background: "rgba(255,255,255,0.7)", fontWeight: 800, color: DIFFICULTY_META[r.difficulty]?.color || "#475569" }}>
+                              {r.difficulty}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: 11, color: "#64748b", marginTop: 8, fontWeight: 700 }}>⏱ 用时 {r.timeUsed}秒</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Complete scrolling ranking table */}
+                  <div style={{
+                    background: "white",
+                    borderRadius: 24,
+                    padding: "16px",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.04)",
+                    border: "1px solid #e2e8f0"
+                  }}>
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: "50px 1fr 100px 100px 140px",
+                      padding: "12px 8px",
+                      borderBottom: "2px solid #f1f5f9",
+                      fontSize: 13,
+                      fontWeight: 900,
+                      color: "#94a3b8",
+                      textTransform: "uppercase"
+                    }} className="leaderboard-table-header">
+                      <span>排名</span>
+                      <span>队伍/选手</span>
+                      <span style={{ textAlign: "center" }}>得分</span>
+                      <span style={{ textAlign: "center" }}>用时</span>
+                      <span style={{ textAlign: "right" }}>对局参数</span>
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column" }} className="leaderboard-table-body">
+                      {leaderboard.map((r, index) => (
+                        <div key={r.id} style={{
+                          display: "grid",
+                          gridTemplateColumns: "50px 1fr 100px 100px 140px",
+                          padding: "16px 8px",
+                          borderBottom: index === leaderboard.length - 1 ? "none" : "1px solid #f1f5f9",
+                          fontSize: 14,
+                          fontWeight: 700,
+                          alignItems: "center",
+                          color: "#475569"
+                        }} className="leaderboard-row">
+                          
+                          {/* Rank */}
+                          <span style={{
+                            fontWeight: 900,
+                            fontSize: 16,
+                            color: index === 0 ? "#eab308" : index === 1 ? "#94a3b8" : index === 2 ? "#d97706" : "#64748b"
+                          }}>
+                            #{index + 1}
+                          </span>
+
+                          {/* Team Name */}
+                          <span style={{ fontWeight: 800, color: "#1e293b", wordBreak: "break-all", paddingRight: 10 }}>{r.teamName}</span>
+
+                          {/* Score */}
+                          <span style={{ textAlign: "center", fontWeight: 900, color: "#7c3aed", fontSize: 16 }}>{r.correct} <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 700 }}>分</span></span>
+
+                          {/* Time */}
+                          <span style={{ textAlign: "center", color: "#64748b" }}>{r.timeUsed}s</span>
+
+                          {/* Params */}
+                          <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                            <span style={{
+                              fontSize: 11,
+                              padding: "3px 8px",
+                              borderRadius: 8,
+                              background: "#f1f5f9",
+                              color: "#475569",
+                              fontWeight: 800
+                            }}>
+                              {r.category}
+                            </span>
+                            <span style={{
+                              fontSize: 11,
+                              padding: "3px 8px",
+                              borderRadius: 8,
+                              background: DIFFICULTY_META[r.difficulty]?.bg || "#fee2e2",
+                              color: DIFFICULTY_META[r.difficulty]?.color || "#ef4444",
+                              fontWeight: 800
+                            }}>
+                              {r.difficulty}
+                            </span>
+                          </div>
+
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

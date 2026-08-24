@@ -10,5 +10,11 @@
   },
   "compatibility_flags": [
     "nodejs_compat"
+  ],
+  "routes": [
+    {
+      "pattern": "word-game.138887.xyz",
+      "custom_domain": true
+    }
   ]
 }
